@@ -6,6 +6,7 @@ require (
 	github.com/lukeroth/gdal v0.0.0-20230422025444-05e99f726ff9
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.7.2
+	golang.org/x/sync v0.3.0
 )
 
 require (

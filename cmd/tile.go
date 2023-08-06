@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/pdxrlj/tile_server/pkg/tile_gdal"
@@ -18,19 +18,20 @@ var root = cobra.Command{
 	Long:  "tile is a tile map server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(testImgPath); err != nil {
-			if !os.IsExist(err) {
-				fmt.Printf("file %s not exist\n", testImgPath)
+			if errors.Is(err, os.ErrNotExist) {
 				return err
 			}
 		}
 
-		gds, err := tile_gdal.Open(testImgPath)
+		gds, err := tile_gdal.OpenTile(tile_gdal.SetTileInputFilename(testImgPath))
 		if err != nil {
-			fmt.Printf("Open error: %s\n", testImgPath)
 			return err
 		}
-		err = gds.WrapVrt()
-		return err
+
+		if err = gds.TileRange().MakeTileJobInfo().GenerateBaseTile(); err != nil {
+			return err
+		}
+		return nil
 	},
 }
 

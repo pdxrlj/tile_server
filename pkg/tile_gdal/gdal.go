@@ -1,34 +1,26 @@
 package tile_gdal
 
-import (
-	"fmt"
-	"os"
+import "github.com/lukeroth/gdal"
 
-	"github.com/lukeroth/gdal"
-)
+func CreateSpatialReference(ds gdal.Dataset, epsg int) (string, error) {
+	sp := gdal.CreateSpatialReference("")
+	if epsg != 0 {
+		epsg = 3857
+	}
+	err := sp.FromEPSG(epsg)
+	if err != nil {
+		return "", nil
+	}
 
-type Gdal struct {
-	ds           *gdal.Dataset
-	outVrtFolder string
+	return sp.ToWKT()
 }
 
-func Open(filename string) (*Gdal, error) {
-	ds, err := gdal.Open(filename, gdal.ReadOnly)
+func SpatialReference(ds gdal.Dataset) (string, error) {
+	pro := ds.Projection()
+	sp := gdal.CreateSpatialReference("")
+	err := sp.FromProj4(pro)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	gd := &Gdal{ds: &ds}
-
-	return gd, nil
-}
-
-// WrapVrt wraps the dataset in a VRT file
-func (g *Gdal) WrapVrt() error {
-	tempDir, err := os.MkdirTemp("tile_server", "*.vrt")
-	if err != nil {
-		return err
-	}
-	fmt.Printf("temp_dir: %s\n", tempDir)
-
-	return nil
+	return sp.ToWKT()
 }
