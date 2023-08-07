@@ -17,6 +17,7 @@ type Tile struct {
 	Mercator      *Mercator
 	TMinMax       map[int]TileMinMax
 	ZoomMax       int
+	ZoomMin       int
 	TileJobInfo   chan *GeoQueryGdalJobInfo
 	EG            *errgroup.Group
 }
@@ -41,10 +42,23 @@ func SetTileOutFolder(outFolder string) TileOption {
 	}
 }
 
+func SetTileZoomMax(zoomMax int) TileOption {
+	return func(t *Tile) {
+		t.ZoomMax = zoomMax
+	}
+}
+
+func SetTileZoomMin(zoomMin int) TileOption {
+	return func(t *Tile) {
+		t.ZoomMin = zoomMin
+	}
+}
+
 func DefaultOpenTile() *Tile {
 	return &Tile{
 		Mercator: NewMercator(),
-		ZoomMax:  21,
+		ZoomMax:  16,
+		ZoomMin:  16,
 		EG:       &errgroup.Group{},
 	}
 }
@@ -166,7 +180,7 @@ type TileMinMax struct {
 func (t *Tile) TileRange() *Tile {
 	minx, miny, maxx, maxy := t.read.TileBoundsByTransform()
 	t.TMinMax = make(map[int]TileMinMax)
-	for z := 0; z <= t.ZoomMax; z++ {
+	for z := t.ZoomMin; z <= t.ZoomMax; z++ {
 		tminx, tminy := t.Mercator.MeterToTile(z, minx, miny)
 		tmaxx, tmaxy := t.Mercator.MeterToTile(z, maxx, maxy)
 		tminx, tminy = int(math.Max(0, float64(tminx))), int(math.Max(0, float64(tminy)))
@@ -185,27 +199,29 @@ func (t *Tile) TileRange() *Tile {
 func (t *Tile) MakeTileJobInfo() *Tile {
 	tileMinMax := t.TMinMax[t.ZoomMax]
 	tcount := int((1.0 + math.Abs(float64(tileMinMax.tmaxx-tileMinMax.tminx))) * (1 + math.Abs(float64(tileMinMax.tmaxy-tileMinMax.tminy))))
-	t.EG.SetLimit(tcount)
-
 	fmt.Printf("[2/3]MakeTileJobInfo tcount: %d\n", tcount)
-	for x := tileMinMax.tminx; x <= tileMinMax.tmaxx; x++ {
-		for y := tileMinMax.tminy; y <= tileMinMax.tmaxy; y++ {
-			go func(xCopy, yCopy int) {
+	t.EG.SetLimit(2)
+
+	go func() {
+		for x := tileMinMax.tminx; x <= tileMinMax.tmaxx; x++ {
+			for y := tileMinMax.tminy; y <= tileMinMax.tmaxy; y++ {
+
 				tileFilename := fmt.Sprintf("%s/%d/%d/%d.png", t.outFolder, t.ZoomMax, x, y)
 				if _, err := os.Stat(tileFilename); err != nil {
 					_ = os.MkdirAll(filepath.Dir(tileFilename), 0755)
 				}
-				minx, miny, maxx, maxy := t.Mercator.TileBounds(t.ZoomMax, xCopy, yCopy)
+				minx, miny, maxx, maxy := t.Mercator.TileBounds(t.ZoomMax, x, y)
 
 				geoQuery := t.GeoQuery(minx, maxy, maxx, miny)
 				geoQuery.TileFilename = tileFilename
 				geoQuery.VrtFilename = t.read.tempFileVrt.Name()
 				geoQuery.QuerySize = t.read.querySize
-				fmt.Printf("[4/5]GeoQuery: %+v\n", geoQuery)
+				//fmt.Printf("[4/5]GeoQuery: %+v\n", geoQuery)
 				t.TileJobInfo <- geoQuery
-			}(x, y)
+			}
 		}
-	}
+	}()
+
 	return t
 }
 

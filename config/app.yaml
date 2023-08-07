@@ -1,0 +1,5 @@
+tile:
+  zoom_max : 18
+  zoom_min : 16
+  input_filename: ""
+  out_folder: ""
