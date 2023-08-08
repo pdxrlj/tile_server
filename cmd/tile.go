@@ -36,6 +36,7 @@ var root = cobra.Command{
 			tile_gdal.SetTileInputFilename(testImgPath),
 			tile_gdal.SetTileZoomMax(config.C.GetZoomMax()),
 			tile_gdal.SetTileZoomMin(config.C.GetZoomMin()),
+			tile_gdal.SetTileOutFolder(config.C.GetOutFolder()),
 		)
 		if err != nil {
 			return err

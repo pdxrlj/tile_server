@@ -52,25 +52,16 @@ func TileRead() NextTileJobFunc {
 	}
 }
 
-func ReadyTile() NextTileJobFunc {
+func TileToPNG() NextTileJobFunc {
 	return func(next TileJobFunc) TileJobFunc {
 		return func(info *GeoQueryGdalJobInfo) error {
-			fmt.Printf("[2/5] ReadyTile: %v\n", info.TileFilename)
+			fmt.Printf("[2/5] ReadyTileToPng: %v\n", info.TileFilename)
 			imgData := info.ImgData
 			memDrv, err := gdal.GetDriverByName("MEM")
 			if err != nil {
 				return err
 			}
-			ds, err := gdal.Open(info.VrtFilename, gdal.ReadOnly)
-			if err != nil {
-				return err
-			}
-			alphaBand := ds.RasterBand(1).GetMaskBand()
-			alphaData := make([]byte, info.RxSize*info.RySize)
-			err = alphaBand.IO(gdal.Read, info.Rx, info.Ry, info.RxSize, info.RySize, alphaData, info.WxSize, info.WySize, 0, 0)
-			if err != nil {
-				return err
-			}
+
 			dsQuery := memDrv.Create("", info.QuerySize, info.QuerySize, info.BandCount, gdal.Byte, nil)
 
 			for i := 0; i < info.BandCount; i++ {
@@ -79,47 +70,39 @@ func ReadyTile() NextTileJobFunc {
 					return err
 				}
 
-				err = dsQuery.RasterBand(i+1).IO(gdal.Write, info.Wx, info.Wy, info.WxSize, info.WySize, alphaData, info.WxSize, info.WySize, 0, 0)
 				if err != nil {
 					return err
 				}
 			}
-			info.dsQuery = dsQuery
-			info.dsTile = memDrv.Create("", 256, 256, info.BandCount, gdal.Byte, nil)
-			return next(info)
-		}
-	}
-}
 
-func ScaleQueryToTile() NextTileJobFunc {
-	return func(next TileJobFunc) TileJobFunc {
-		return func(info *GeoQueryGdalJobInfo) error {
-			fmt.Printf("[3/5] ScaleQueryToTile\n")
-			for i := 0; i < info.BandCount; i++ {
-				dstBand := info.dsTile.RasterBand(i + 1)
-				err := info.dsQuery.RasterBand(i+1).RegenerateOverviews(3, &dstBand, "average", nil, nil)
-				if err != nil {
-					return err
-				}
-			}
-			return next(info)
-		}
-	}
-}
-
-func ToPNG() NextTileJobFunc {
-	return func(next TileJobFunc) TileJobFunc {
-		return func(info *GeoQueryGdalJobInfo) error {
-			fmt.Printf("[4/5] ToPNG: %v\n", info.TileFilename)
-			outDrv, err := gdal.GetDriverByName("PNG")
-			if err != nil {
+			if err := ScaleQueryToPNG(dsQuery, info.TileFilename); err != nil {
 				return err
 			}
 
-			outDs := outDrv.CreateCopy(info.TileFilename, info.dsTile, 0, nil, nil, nil)
-			outDs.FlushCache()
-			outDs.Close()
 			return next(info)
 		}
 	}
+}
+
+func ScaleQueryToPNG(query gdal.Dataset, filename string) error {
+	fmt.Printf("[3/5] ScaleQueryToPNG\n")
+	memDrv, err := gdal.GetDriverByName("MEM")
+	if err != nil {
+		return err
+	}
+
+	bandCount := query.RasterCount()
+
+	dsTile := memDrv.Create("", 256, 256, bandCount, gdal.Byte, nil)
+	for i := 0; i < bandCount; i++ {
+		dsQueryBand := query.RasterBand(i + 1)
+		dstBand := dsTile.RasterBand(i + 1)
+		err := dsQueryBand.RegenerateOverviews(1, &dstBand, "average", gdal.DummyProgress, nil)
+		if err != nil {
+			return err
+		}
+	}
+	outDrv, err := gdal.GetDriverByName("PNG")
+	outDrv.CreateCopy(filename, dsTile, 0, nil, nil, nil)
+	return nil
 }

@@ -205,8 +205,11 @@ func (t *Tile) MakeTileJobInfo() *Tile {
 	go func() {
 		for x := tileMinMax.tminx; x <= tileMinMax.tmaxx; x++ {
 			for y := tileMinMax.tminy; y <= tileMinMax.tmaxy; y++ {
-
 				tileFilename := fmt.Sprintf("%s/%d/%d/%d.png", t.outFolder, t.ZoomMax, x, y)
+				if t.outFolder == "" {
+					tileFilename = fmt.Sprintf("%d/%d/%d.png", t.ZoomMax, x, y)
+				}
+
 				if _, err := os.Stat(tileFilename); err != nil {
 					_ = os.MkdirAll(filepath.Dir(tileFilename), 0755)
 				}
@@ -233,22 +236,17 @@ func (t *Tile) GenerateBaseTile() error {
 			if jobInfoCopy.RxSize == 0 || jobInfoCopy.RySize == 0 || jobInfoCopy.WxSize == 0 || jobInfoCopy.WySize == 0 {
 				return nil
 			}
-
 			err := Execution(jobInfoCopy, func(info *GeoQueryGdalJobInfo) error {
-				fmt.Printf("[5/5] Execution: %+v\n", info)
-				info.dsTile.FlushCache()
-				info.dsTile.Close()
-
-				info.dsQuery.FlushCache()
-				info.dsQuery.Close()
+				fmt.Printf("[5/5] Execution: %+v\n", info.TileFilename)
 				return nil
-			}, TileRead(), ReadyTile(), ScaleQueryToTile(), ToPNG())
+			}, TileRead(), TileToPNG())
 			if err != nil {
 				return err
 			}
 			return nil
 		})
 	}
+
 	if err := t.EG.Wait(); err != nil {
 		return err
 	}
