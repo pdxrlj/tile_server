@@ -83,3 +83,12 @@ func WrapGdalVrt(src gdal.Dataset, epsgCode int) (*VrtInfo, error) {
 	_ = tempFile.Close()
 	return vrtInfo, nil
 }
+
+func TileBoundsByTransform(dataset gdal.Dataset) (float64, float64, float64, float64) {
+	transform := dataset.GeoTransform()
+	minx := transform[0]
+	maxy := transform[3]
+	maxx := minx + transform[1]*float64(dataset.RasterXSize())
+	miny := maxy + transform[5]*float64(dataset.RasterYSize())
+	return minx, miny, maxx, maxy
+}
