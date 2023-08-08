@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/pdxrlj/tile_server/config"
-	"github.com/pdxrlj/tile_server/pkg/tile_gdal"
+	"github.com/pdxrlj/tile_server/pkg/gdal"
 )
 
 const (
@@ -32,11 +32,11 @@ var root = cobra.Command{
 			}
 		}
 
-		gds, err := tile_gdal.OpenTile(
-			tile_gdal.SetTileInputFilename(testImgPath),
-			tile_gdal.SetTileZoomMax(config.C.GetZoomMax()),
-			tile_gdal.SetTileZoomMin(config.C.GetZoomMin()),
-			tile_gdal.SetTileOutFolder(config.C.GetOutFolder()),
+		gds, err := gdal.OpenTile(
+			gdal.SetTileInputFilename(testImgPath),
+			gdal.SetTileZoomMax(config.C.GetZoomMax()),
+			gdal.SetTileZoomMin(config.C.GetZoomMin()),
+			gdal.SetTileOutFolder(config.C.GetOutFolder()),
 		)
 		if err != nil {
 			return err

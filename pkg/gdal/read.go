@@ -1,4 +1,4 @@
-package tile_gdal
+package gdal
 
 import (
 	"os"
@@ -82,7 +82,7 @@ func (r *Read) WrapVrt() *Read {
 		return r
 	}
 
-	dstWkt, err := CreateSpatialReference(ds, 3857)
+	dstWkt, err := CreateSpatialReference(3857)
 	if err != nil {
 		r.err = append(r.err, err)
 		return r

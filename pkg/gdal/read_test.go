@@ -1,4 +1,4 @@
-package tile_gdal
+package gdal
 
 import (
 	"testing"
