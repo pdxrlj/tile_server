@@ -213,7 +213,7 @@ func (t *Tile) MakeTileJobInfo() *Tile {
 				if _, err := os.Stat(tileFilename); err != nil {
 					_ = os.MkdirAll(filepath.Dir(tileFilename), 0755)
 				}
-				minx, miny, maxx, maxy := t.Mercator.TileBounds(t.ZoomMax, x, y)
+				minx, miny, maxx, maxy := t.Mercator.TileMetersBounds(t.ZoomMax, x, y)
 
 				geoQuery := t.GeoQuery(minx, maxy, maxx, miny)
 				geoQuery.TileFilename = tileFilename

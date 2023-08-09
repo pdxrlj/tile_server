@@ -2,8 +2,6 @@ package tile
 
 import (
 	"math"
-
-	"github.com/lukeroth/gdal"
 )
 
 type Window struct {
@@ -21,15 +19,19 @@ type Window struct {
 type WindowsReadBox struct {
 	Minx, Maxy, Maxx, Miny float64
 	TileSize               int
+	Height, Width          int
+	GeoTransform           [6]float64
 }
 
 func NewWindows() *Window {
 	return &Window{}
 }
 
-func (t *Window) ReadBox(dataset gdal.Dataset, box *WindowsReadBox) *Window {
-	geoTransform := dataset.GeoTransform()
+func (t *Window) ReadBox(box *WindowsReadBox) *Window {
 	// 计算该瓦片的左上角在源图上的 x/y 像素坐标
+	geoTransform := box.GeoTransform
+	RasterXSize := box.Width
+	RasterYSize := box.Height
 	rx := int((box.Minx-geoTransform[0])/geoTransform[1] + 0.001)
 	ry := int((box.Maxy-geoTransform[3])/geoTransform[5] + 0.001)
 	// 计算该瓦片在源图读取瓦片的宽高
@@ -49,9 +51,9 @@ func (t *Window) ReadBox(dataset gdal.Dataset, box *WindowsReadBox) *Window {
 		rx = 0
 	}
 
-	if rx+rxSize > dataset.RasterXSize() {
-		wxSize = int(float64(wxSize) * (float64(dataset.RasterXSize()-rx) / float64(rxSize)))
-		rxSize = dataset.RasterXSize() - rx
+	if rx+rxSize > RasterXSize {
+		wxSize = int(float64(wxSize) * (float64(RasterXSize-rx) / float64(rxSize)))
+		rxSize = RasterXSize - rx
 	}
 
 	wy := 0
@@ -64,9 +66,9 @@ func (t *Window) ReadBox(dataset gdal.Dataset, box *WindowsReadBox) *Window {
 		ry = 0
 	}
 
-	if ry+rySize > dataset.RasterYSize() {
-		wySize = int(float64(wySize) * (float64(dataset.RasterYSize()-ry) / float64(rySize)))
-		rySize = dataset.RasterYSize() - ry
+	if ry+rySize > RasterYSize {
+		wySize = int(float64(wySize) * (float64(RasterYSize-ry) / float64(rySize)))
+		rySize = RasterYSize - ry
 	}
 
 	return &Window{

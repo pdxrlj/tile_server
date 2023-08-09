@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -9,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/pdxrlj/tile_server/config"
-	"github.com/pdxrlj/tile_server/pkg/gdal"
+	"github.com/pdxrlj/tile_server/pkg/tile"
 )
 
 const (
@@ -32,19 +33,15 @@ var root = cobra.Command{
 			}
 		}
 
-		gds, err := gdal.OpenTile(
-			gdal.SetTileInputFilename(testImgPath),
-			gdal.SetTileZoomMax(config.C.GetZoomMax()),
-			gdal.SetTileZoomMin(config.C.GetZoomMin()),
-			gdal.SetTileOutFolder(config.C.GetOutFolder()),
-		)
-		if err != nil {
+		if err := tile.NewTile(
+			tile.SetInputFilename(testImgPath),
+			tile.SetZoomMaxMin(config.C.GetZoomMax(), config.C.GetZoomMin()),
+			tile.SetOutFolder(config.C.GetOutFolder()),
+		).GenerateGdalReadWindows().CuttingToImg().Close(); err != nil {
+			fmt.Printf("tile.NewTile error:%v\n", err)
 			return err
 		}
 
-		if err = gds.TileRange().MakeTileJobInfo().GenerateBaseTile(); err != nil {
-			return err
-		}
 		return nil
 	},
 }
@@ -86,7 +83,7 @@ func init() {
 }
 
 func CommandLine() {
-	root.PersistentFlags().IntP("zoom_max", "u", 10, "minzoom")
+	root.PersistentFlags().IntP("zoom_max", "u", 10, "maxzoom")
 	root.PersistentFlags().IntP("zoom_min", "l", 0, "minzoom")
 	root.PersistentFlags().StringP("input_filename", "i", "", "input_filename")
 	root.PersistentFlags().StringP("out_folder", "o", "", "out_folder")

@@ -94,10 +94,10 @@ func (m *Mercator) tileToLonLat(tx, ty, tz int) (float64, float64) {
 	return lon, lat
 }
 
-// TileBounds returns the bounds of a tile in meters
+// TileMetersBounds returns the bounds of a tile in meters
 // tz: zoom level
 // tx, ty: tile coordinates
-func (m *Mercator) TileBounds(tz, tx, ty int) (float64, float64, float64, float64) {
+func (m *Mercator) TileMetersBounds(tz, tx, ty int) (float64, float64, float64, float64) {
 	minx, miny := m.PixelsToMeters(float64(tx*m.TileSize), float64(ty*m.TileSize), tz)
 	maxx, maxy := m.PixelsToMeters(float64((tx+1)*m.TileSize), float64((ty+1)*m.TileSize), tz)
 	return minx, miny, maxx, maxy
