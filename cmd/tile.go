@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	testImgPath = "/Users/ruanlianjun/Desktop/tif/春江街道山建村1.tif"
+	testImgPath = "/Users/ruanlianjun/Desktop/tif/老寨新寨1.tif"
 )
 
 var root = cobra.Command{

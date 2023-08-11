@@ -142,17 +142,17 @@ func (tile *Tile) CuttingToImg() *Tile {
 	}
 
 	wg := errgroup.Group{}
-	wg.SetLimit(200)
+	wg.SetLimit(1)
 	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
 		for _, tileId := range tile.ZoomTileIds[z] {
-			tileIdCopy := tileId
 			wg.Go(func() error {
 				dataset, err := gdal.Open(tile.tempFileVrt, gdal.ReadOnly)
 				if err != nil {
 					return err
 				}
-				fmt.Printf("当前要切割瓦片的名称：%s\n", tileIdCopy.Filename)
-				err = tileIdCopy.ReadTile(dataset)
+				fmt.Printf("当前要切割瓦片的名称：%s\n", tileId.Filename)
+				return nil
+				err = tileId.ReadTile(dataset)
 				if err != nil {
 					return err
 				}
