@@ -150,8 +150,7 @@ func (tile *Tile) CuttingToImg() *Tile {
 				if err != nil {
 					return err
 				}
-				fmt.Printf("当前要切割瓦片的名称：%s\n", tileId.Filename)
-				return nil
+
 				err = tileId.ReadTile(dataset)
 				if err != nil {
 					return err
