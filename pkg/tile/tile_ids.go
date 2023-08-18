@@ -6,7 +6,7 @@ import (
 	"github.com/lukeroth/gdal"
 )
 
-type TileId struct {
+type Id struct {
 	Z, X, Y   int
 	Windows   *Window
 	Filename  string
@@ -16,12 +16,12 @@ type TileId struct {
 	dsQuery   gdal.Dataset
 }
 
-func (t *TileId) String() string {
+func (t *Id) String() string {
 	return fmt.Sprintf("Z:%d X:%d Y:%d", t.Z, t.X, t.Y)
 }
 
-func (t *TileId) ReadTile(dataset gdal.Dataset) error {
-	return ReadExec(t, func(info *TileId) error {
+func (t *Id) ReadTile(dataset gdal.Dataset) error {
+	return ReadExec(t, func(info *Id) error {
 		memDrv, err := gdal.GetDriverByName("MEM")
 		if err != nil {
 			return err
@@ -41,14 +41,14 @@ func (t *TileId) ReadTile(dataset gdal.Dataset) error {
 
 		return nil
 
-	}, initTileRead(dataset), TileRead(), TileToPNG())
+	}, initTileRead(dataset), Read(), TileToPNG())
 }
 
-type TileReadFunc func(*TileId) error
+type ReadFunc func(*Id) error
 
-type NextTileReadFunc func(next TileReadFunc) TileReadFunc
+type NextTileReadFunc func(next ReadFunc) ReadFunc
 
-func ReadExec(info *TileId, readFunc TileReadFunc, next ...NextTileReadFunc) error {
+func ReadExec(info *Id, readFunc ReadFunc, next ...NextTileReadFunc) error {
 	for i := len(next) - 1; i >= 0; i-- {
 		readFunc = next[i](readFunc)
 	}
@@ -56,8 +56,8 @@ func ReadExec(info *TileId, readFunc TileReadFunc, next ...NextTileReadFunc) err
 }
 
 func initTileRead(dataset gdal.Dataset) NextTileReadFunc {
-	return func(next TileReadFunc) TileReadFunc {
-		return func(info *TileId) error {
+	return func(next ReadFunc) ReadFunc {
+		return func(info *Id) error {
 			info.querySize = 256 * 4
 			info.dataset = dataset
 			info.imgBuf = make([][]byte, info.dataset.RasterCount())
@@ -66,9 +66,9 @@ func initTileRead(dataset gdal.Dataset) NextTileReadFunc {
 	}
 }
 
-func TileRead() NextTileReadFunc {
-	return func(next TileReadFunc) TileReadFunc {
-		return func(info *TileId) error {
+func Read() NextTileReadFunc {
+	return func(next ReadFunc) ReadFunc {
+		return func(info *Id) error {
 			bandCount := info.dataset.RasterCount()
 
 			for i := 0; i < bandCount; i++ {
@@ -92,8 +92,8 @@ func TileRead() NextTileReadFunc {
 }
 
 func TileToPNG() NextTileReadFunc {
-	return func(next TileReadFunc) TileReadFunc {
-		return func(info *TileId) error {
+	return func(next ReadFunc) ReadFunc {
+		return func(info *Id) error {
 			imgData := info.imgBuf
 			memDrv, err := gdal.GetDriverByName("MEM")
 			if err != nil {

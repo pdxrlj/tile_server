@@ -21,7 +21,7 @@ type Tile struct {
 	inputFilename string
 	bandCount     int
 	querySize     int
-	ZoomTileIds   [][]*TileId
+	ZoomTileIds   [][]*Id
 	ZoomMax       int
 	ZoomMin       int
 	Mercator      *pkgGdal.Mercator
@@ -67,7 +67,7 @@ func NewTile(options ...TileOption) *Tile {
 
 func (tile *Tile) GenerateGdalReadWindows() *Tile {
 	minx, miny, maxx, maxy := tile.Gdal.GetBoundsByTransform()
-	tile.ZoomTileIds = make([][]*TileId, tile.ZoomMax+1)
+	tile.ZoomTileIds = make([][]*Id, tile.ZoomMax+1)
 
 	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
 		tminx, tminy := tile.Mercator.MeterToTile(z, minx, miny)
@@ -87,7 +87,7 @@ func (tile *Tile) windows(tz, tminx, tminy, tmaxx, tmaxy int) *Tile {
 
 	wg.SetLimit(int(math.Ceil(float64(tcount / 2))))
 
-	tile.ZoomTileIds[tz] = make([]*TileId, 0, tcount)
+	tile.ZoomTileIds[tz] = make([]*Id, 0, tcount)
 	wg.Go(func() error {
 		for x := tminx; x <= tmaxx; x++ {
 			for y := tminy; y <= tmaxy; y++ {
@@ -110,7 +110,7 @@ func (tile *Tile) windows(tz, tminx, tminy, tmaxx, tmaxy int) *Tile {
 					Height:       tile.Gdal.GetHeight(),
 					Width:        tile.Gdal.GetWidth(),
 				})
-				tile.ZoomTileIds[tz] = append(tile.ZoomTileIds[tz], &TileId{
+				tile.ZoomTileIds[tz] = append(tile.ZoomTileIds[tz], &Id{
 					Z:        tz,
 					X:        x,
 					Y:        y,
