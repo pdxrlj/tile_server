@@ -16,6 +16,7 @@ type Tile struct {
 	ZoomMin       int    `mapstructure:"zoom_min"`
 	InputFilename string `mapstructure:"input_filename"`
 	OutFolder     string `mapstructure:"out_folder"`
+	Style         string `mapstructure:"style"`
 }
 
 func (a *Config) Marsh() error {
@@ -32,6 +33,10 @@ func (a *Config) GetZoomMin() int {
 
 func (a *Config) GetInputFilename() string {
 	return a.Tile.InputFilename
+}
+
+func (a *Config) GetTileStyle() string {
+	return a.Tile.Style
 }
 
 func (a *Config) GetOutFolder() string {
@@ -55,6 +60,11 @@ func ViperBindFlagsAlias(command cobra.Command) error {
 	}
 
 	err = viper.BindPFlag("tile.out_folder", command.PersistentFlags().Lookup("out_folder"))
+	if err != nil {
+		return err
+	}
+
+	err = viper.BindPFlag("tile.style", command.PersistentFlags().Lookup("style"))
 	if err != nil {
 		return err
 	}

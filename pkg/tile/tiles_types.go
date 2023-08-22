@@ -8,6 +8,12 @@ func SetTileSize(tileSize int) TileOption {
 	}
 }
 
+func SetTileStyle(style string) TileOption {
+	return func(r *Tile) {
+		r.style = style
+	}
+}
+
 func SetOutFolder(outFolder string) TileOption {
 	return func(r *Tile) {
 		r.outFolder = outFolder

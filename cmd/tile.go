@@ -35,6 +35,7 @@ var root = cobra.Command{
 
 		if err := tile.NewTile(
 			tile.SetInputFilename(config.C.GetInputFilename()),
+			tile.SetTileStyle(config.C.GetTileStyle()),
 			tile.SetZoomMaxMin(config.C.GetZoomMax(), config.C.GetZoomMin()),
 			tile.SetOutFolder(config.C.GetOutFolder()),
 		).GenerateGdalReadWindows().CuttingToImg().Close(); err != nil {
@@ -83,8 +84,9 @@ func init() {
 }
 
 func CommandLine() {
-	root.PersistentFlags().IntP("zoom_max", "u", 10, "maxzoom")
-	root.PersistentFlags().IntP("zoom_min", "l", 0, "minzoom")
-	root.PersistentFlags().StringP("input_filename", "i", "", "input_filename")
-	root.PersistentFlags().StringP("out_folder", "o", "", "out_folder")
+	root.PersistentFlags().IntP("zoom_max", "u", 10, "最大层级")
+	root.PersistentFlags().IntP("zoom_min", "l", 0, "最小层级")
+	root.PersistentFlags().StringP("input_filename", "i", "", "输入文件")
+	root.PersistentFlags().StringP("out_folder", "o", "", "输出文件")
+	root.PersistentFlags().StringP("style", "s", "", "瓦片风格 tms/google 两种")
 }

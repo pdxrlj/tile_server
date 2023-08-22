@@ -19,6 +19,7 @@ type Tile struct {
 	err           []error
 	tileSize      int
 	inputFilename string
+	style         string
 	bandCount     int
 	querySize     int
 	ZoomTileIds   [][]*Id
@@ -93,9 +94,14 @@ func (tile *Tile) windows(tz, tminx, tminy, tmaxx, tmaxy int) *Tile {
 	wg.Go(func() error {
 		for x := tminx; x <= tmaxx; x++ {
 			for y := tminy; y <= tmaxy; y++ {
-				filename := fmt.Sprintf("%s/%d/%d/%d.png", tile.outFolder, tz, x, y)
+				tmsY := y
+				if tile.style == "tms" {
+					tmsY = (1 << tz) - y - 1
+				}
+
+				filename := fmt.Sprintf("%s/%d/%d/%d.png", tile.outFolder, tz, x, tmsY)
 				if tile.outFolder == "" {
-					filename = fmt.Sprintf("%d/%d/%d.png", tz, x, y)
+					filename = fmt.Sprintf("%d/%d/%d.png", tz, x, tmsY)
 				}
 				if _, err := os.Stat(filename); err != nil {
 					_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
