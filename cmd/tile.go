@@ -34,7 +34,7 @@ var root = cobra.Command{
 		}
 
 		if err := tile.NewTile(
-			tile.SetInputFilename(testImgPath),
+			tile.SetInputFilename(config.C.GetInputFilename()),
 			tile.SetZoomMaxMin(config.C.GetZoomMax(), config.C.GetZoomMin()),
 			tile.SetOutFolder(config.C.GetOutFolder()),
 		).GenerateGdalReadWindows().CuttingToImg().Close(); err != nil {

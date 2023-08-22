@@ -40,6 +40,8 @@ func NewTile(options ...TileOption) *Tile {
 	if len(defaultTile.err) > 0 {
 		return defaultTile
 	}
+	fmt.Printf("输入文件:%s\n", defaultTile.inputFilename)
+
 	dataset, err := gdal.Open(defaultTile.inputFilename, gdal.ReadOnly)
 	if err != nil {
 		defaultTile.err = append(defaultTile.err, err)
@@ -74,7 +76,7 @@ func (tile *Tile) GenerateGdalReadWindows() *Tile {
 		tmaxx, tmaxy := tile.Mercator.MeterToTile(z, maxx, maxy)
 		tminx, tminy = int(math.Max(0, float64(tminx))), int(math.Max(0, float64(tminy)))
 		tmaxx, tmaxy = int(math.Min(math.Pow(2, float64(z))-1, float64(tmaxx))), int(math.Min(math.Pow(2, float64(z))-1, float64(tmaxy)))
-		fmt.Printf("当前层级:%d,最小瓦片号:%d,%d,最大瓦片号:%d,%d\n", z, tminx, tminy, tmaxx, tmaxy)
+		//fmt.Printf("当前层级:%d,最小瓦片号:%d,%d,最大瓦片号:%d,%d\n", z, tminx, tminy, tmaxx, tmaxy)
 		tile.windows(z, tminx, tminy, tmaxx, tmaxy)
 	}
 	return tile
@@ -145,13 +147,14 @@ func (tile *Tile) CuttingToImg() *Tile {
 	wg.SetLimit(1)
 	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
 		for _, tileId := range tile.ZoomTileIds[z] {
+			tileIdCopy := tileId
 			wg.Go(func() error {
 				dataset, err := gdal.Open(tile.tempFileVrt, gdal.ReadOnly)
 				if err != nil {
 					return err
 				}
 
-				err = tileId.ReadTile(dataset)
+				err = tileIdCopy.ReadTile(dataset)
 				if err != nil {
 					return err
 				}
