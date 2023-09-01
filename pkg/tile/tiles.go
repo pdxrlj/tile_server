@@ -27,6 +27,9 @@ type Tile struct {
 	ZoomMin       int
 	Mercator      *pkgGdal.Mercator
 	Gdal          *pkgGdal.Gdal
+	Concurrency   int
+	wg            *errgroup.Group
+	TZMinMax      [][]int
 }
 
 func NewTile(options ...TileOption) *Tile {
@@ -64,6 +67,8 @@ func NewTile(options ...TileOption) *Tile {
 		return defaultTile
 	}
 	defaultTile.Gdal.AdvanceCalculate()
+	defaultTile.wg = &errgroup.Group{}
+	defaultTile.wg.SetLimit(defaultTile.Concurrency)
 
 	return defaultTile
 }
@@ -71,6 +76,7 @@ func NewTile(options ...TileOption) *Tile {
 func (tile *Tile) GenerateGdalReadWindows() *Tile {
 	minx, miny, maxx, maxy := tile.Gdal.GetBoundsByTransform()
 	tile.ZoomTileIds = make([][]*Id, tile.ZoomMax+1)
+	tile.TZMinMax = make([][]int, tile.ZoomMax+1)
 
 	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
 		tminx, tminy := tile.Mercator.MeterToTile(z, minx, miny)
@@ -79,6 +85,7 @@ func (tile *Tile) GenerateGdalReadWindows() *Tile {
 		tmaxx, tmaxy = int(math.Min(math.Pow(2, float64(z))-1, float64(tmaxx))), int(math.Min(math.Pow(2, float64(z))-1, float64(tmaxy)))
 		//fmt.Printf("当前层级:%d,最小瓦片号:%d,%d,最大瓦片号:%d,%d\n", z, tminx, tminy, tmaxx, tmaxy)
 		tile.windows(z, tminx, tminy, tmaxx, tmaxy)
+		tile.TZMinMax[z] = []int{tminx, tminy, tmaxx, tmaxy}
 	}
 	return tile
 }
@@ -144,32 +151,16 @@ func (tile *Tile) Close() error {
 	return nil
 }
 
+// CuttingToImg 裁切底层影像
 func (tile *Tile) CuttingToImg() *Tile {
 	if len(tile.err) > 0 {
 		return tile
 	}
 
-	wg := errgroup.Group{}
-	wg.SetLimit(1)
 	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
-		for _, tileId := range tile.ZoomTileIds[z] {
-			tileIdCopy := tileId
-			wg.Go(func() error {
-				dataset, err := gdal.Open(tile.tempFileVrt, gdal.ReadOnly)
-				if err != nil {
-					return err
-				}
 
-				err = tileIdCopy.ReadTile(dataset)
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-		}
 	}
 
-	err := wg.Wait()
 	if err != nil {
 		tile.err = append(tile.err, err)
 		return tile

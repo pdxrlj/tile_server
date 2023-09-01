@@ -1,6 +1,6 @@
 module github.com/pdxrlj/tile_server
 
-go 1.20
+go 1.21
 
 require (
 	github.com/lukeroth/gdal v0.0.0-20230818033548-f6d751d7df9f

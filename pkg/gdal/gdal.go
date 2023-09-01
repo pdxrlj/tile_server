@@ -69,6 +69,15 @@ func WrapGdalVrt(src gdal.Dataset, epsgCode int) (*VrtInfo, error) {
 	}
 	vrt, err := gdal.GetDriverByName("VRT")
 
+	// 设置颜色表
+	colorTable := src.RasterBand(1).ColorTable()
+	for i := 1; i <= warpedVRT.RasterCount(); i++ {
+		err = warpedVRT.RasterBand(i).SetColorTable(colorTable)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	options := []string{
 		"INIT_DEST=INIT_DEST",
 		"UNIFIED_SRC_NODATA=YES",

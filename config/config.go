@@ -17,6 +17,7 @@ type Tile struct {
 	InputFilename string `mapstructure:"input_filename"`
 	OutFolder     string `mapstructure:"out_folder"`
 	Style         string `mapstructure:"style"`
+	Concurrency   int    `mapstructure:"concurrency"`
 }
 
 func (a *Config) Marsh() error {
@@ -43,6 +44,10 @@ func (a *Config) GetOutFolder() string {
 	return a.Tile.OutFolder
 }
 
+func (a *Config) GetConcurrency() int {
+	return a.Tile.Concurrency
+}
+
 func ViperBindFlagsAlias(command cobra.Command) error {
 	err := viper.BindPFlag("tile.zoom_max", command.PersistentFlags().Lookup("zoom_max"))
 	if err != nil {
@@ -65,6 +70,11 @@ func ViperBindFlagsAlias(command cobra.Command) error {
 	}
 
 	err = viper.BindPFlag("tile.style", command.PersistentFlags().Lookup("style"))
+	if err != nil {
+		return err
+	}
+
+	err = viper.BindPFlag("tile.concurrency", command.PersistentFlags().Lookup("c"))
 	if err != nil {
 		return err
 	}

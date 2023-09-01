@@ -8,6 +8,12 @@ func SetTileSize(tileSize int) TileOption {
 	}
 }
 
+func SetConcurrency(concurrency int) TileOption {
+	return func(r *Tile) {
+		r.Concurrency = concurrency
+	}
+}
+
 func SetTileStyle(style string) TileOption {
 	return func(r *Tile) {
 		r.style = style

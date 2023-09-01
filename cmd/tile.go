@@ -36,6 +36,7 @@ var root = cobra.Command{
 		if err := tile.NewTile(
 			tile.SetInputFilename(config.C.GetInputFilename()),
 			tile.SetTileStyle(config.C.GetTileStyle()),
+			tile.SetConcurrency(config.C.GetConcurrency()),
 			tile.SetZoomMaxMin(config.C.GetZoomMax(), config.C.GetZoomMin()),
 			tile.SetOutFolder(config.C.GetOutFolder()),
 		).GenerateGdalReadWindows().CuttingToImg().Close(); err != nil {
@@ -89,4 +90,5 @@ func CommandLine() {
 	root.PersistentFlags().StringP("input_filename", "i", "", "输入文件")
 	root.PersistentFlags().StringP("out_folder", "o", "", "输出文件")
 	root.PersistentFlags().StringP("style", "s", "", "瓦片风格 tms/google 两种")
+	root.PersistentFlags().IntP("concurrency", "c", 3, "并发数")
 }

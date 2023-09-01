@@ -3,3 +3,4 @@ tile:
   zoom_min : 16
   input_filename: ""
   out_folder: ""
+  concurrency: 3
