@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/lukeroth/gdal v0.0.0-20230818033548-f6d751d7df9f
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0

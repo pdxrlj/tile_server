@@ -74,7 +74,7 @@ func ViperBindFlagsAlias(command cobra.Command) error {
 		return err
 	}
 
-	err = viper.BindPFlag("tile.concurrency", command.PersistentFlags().Lookup("c"))
+	err = viper.BindPFlag("tile.concurrency", command.PersistentFlags().Lookup("concurrency"))
 	if err != nil {
 		return err
 	}

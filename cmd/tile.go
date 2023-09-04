@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -40,7 +39,6 @@ var root = cobra.Command{
 			tile.SetZoomMaxMin(config.C.GetZoomMax(), config.C.GetZoomMin()),
 			tile.SetOutFolder(config.C.GetOutFolder()),
 		).GenerateGdalReadWindows().CuttingToImg().Close(); err != nil {
-			fmt.Printf("tile.NewTile error:%v\n", err)
 			return err
 		}
 

@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/lukeroth/gdal"
 	"golang.org/x/sync/errgroup"
@@ -30,6 +31,7 @@ type Tile struct {
 	Concurrency   int
 	wg            *errgroup.Group
 	TZMinMax      [][]int
+	TzCount       map[int]int
 }
 
 func NewTile(options ...TileOption) *Tile {
@@ -69,7 +71,8 @@ func NewTile(options ...TileOption) *Tile {
 	defaultTile.Gdal.AdvanceCalculate()
 	defaultTile.wg = &errgroup.Group{}
 	defaultTile.wg.SetLimit(defaultTile.Concurrency)
-
+	defaultTile.TzCount = make(map[int]int, defaultTile.ZoomMax-defaultTile.ZoomMin+1)
+	defaultTile.bandCount = dataset.RasterCount()
 	return defaultTile
 }
 
@@ -91,30 +94,35 @@ func (tile *Tile) GenerateGdalReadWindows() *Tile {
 }
 
 func (tile *Tile) windows(tz, tminx, tminy, tmaxx, tmaxy int) *Tile {
-	wg := errgroup.Group{}
+	wg := sync.WaitGroup{}
 	tcount := int((1.0 + math.Abs(float64(tmaxx-tminx))) * (1 + math.Abs(float64(tmaxy-tminy))))
-	fmt.Printf("当前层级:%d,总共瓦片数:%d\n", tz, tcount)
 
-	wg.SetLimit(int(math.Ceil(float64(tcount / 2))))
+	tile.TzCount[tz] = tcount
 
 	tile.ZoomTileIds[tz] = make([]*Id, 0, tcount)
-	wg.Go(func() error {
-		for x := tminx; x <= tmaxx; x++ {
-			for y := tminy; y <= tmaxy; y++ {
-				tmsY := y
+	fmt.Printf("当前层级:%d,最小瓦片号:%d,%d,最大瓦片号:%d,%d,总瓦片数:%d\n", tz, tminx, tminy, tmaxx, tmaxy, tcount)
+
+	for x := tminx; x <= tmaxx; x++ {
+		for y := tminy; y <= tmaxy; y++ {
+			xCopy := x
+			yCopy := y
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				tmsY := yCopy
 				if tile.style == "tms" {
-					tmsY = (1 << tz) - y - 1
+					tmsY = (1 << tz) - yCopy - 1
 				}
 
-				filename := fmt.Sprintf("%s/%d/%d/%d.png", tile.outFolder, tz, x, tmsY)
+				filename := fmt.Sprintf("%s/%d/%d/%d.png", tile.outFolder, tz, xCopy, tmsY)
 				if tile.outFolder == "" {
-					filename = fmt.Sprintf("%d/%d/%d.png", tz, x, tmsY)
+					filename = fmt.Sprintf("%d/%d/%d.png", tz, xCopy, tmsY)
 				}
 				if _, err := os.Stat(filename); err != nil {
 					_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 				}
 
-				minx, miny, maxx, maxy := tile.Mercator.TileMetersBounds(tz, x, y)
+				minx, miny, maxx, maxy := tile.Mercator.TileMetersBounds(tz, xCopy, yCopy)
 				windows := NewWindows().ReadBox(&WindowsReadBox{
 					Minx:         minx,
 					Maxy:         maxy,
@@ -127,19 +135,18 @@ func (tile *Tile) windows(tz, tminx, tminy, tmaxx, tmaxy int) *Tile {
 				})
 				tile.ZoomTileIds[tz] = append(tile.ZoomTileIds[tz], &Id{
 					Z:        tz,
-					X:        x,
-					Y:        y,
+					X:        xCopy,
+					Y:        yCopy,
 					Filename: filename,
 					Windows:  windows,
 				})
-			}
+
+			}()
+
 		}
-		return nil
-	})
-	err := wg.Wait()
-	if err != nil {
-		tile.err = append(tile.err, err)
 	}
+
+	wg.Wait()
 	return tile
 }
 
@@ -151,17 +158,13 @@ func (tile *Tile) Close() error {
 	return nil
 }
 
-// CuttingToImg 裁切底层影像
+// CuttingToImg 裁切影像
 func (tile *Tile) CuttingToImg() *Tile {
 	if len(tile.err) > 0 {
 		return tile
 	}
-
-	for z := tile.ZoomMin; z <= tile.ZoomMax; z++ {
-
-	}
-
-	if err != nil {
+	fmt.Printf("开始裁切影像\n")
+	if err := BuildMapTiles(tile); err != nil {
 		tile.err = append(tile.err, err)
 		return tile
 	}
